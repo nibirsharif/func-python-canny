@@ -1,0 +1,57 @@
+data:
+  AzureWebJobsStorage: RGVmYXVsdEVuZHBvaW50c1Byb3RvY29sPWh0dHBzO0FjY291bnROYW1lPXNuaWJpcmtlZGFzdG9yO0FjY291bnRLZXk9ZkJLOVlqYW44Vm8xdnJGZ2xhTTFaQS83YVl3eHpOcVk5N3lxaEhPUlpQQTBHdHBoUWUzSTlWdGJLZVhkUjJvc1E0SHh2KzJxLytybHpFWDczR3U1TXc9PTtFbmRwb2ludFN1ZmZpeD1jb3JlLndpbmRvd3MubmV0
+  FUNCTIONS_WORKER_RUNTIME: cHl0aG9u
+  snibirkedastor_STORAGE: RGVmYXVsdEVuZHBvaW50c1Byb3RvY29sPWh0dHBzO0FjY291bnROYW1lPXNuaWJpcmtlZGFzdG9yO0FjY291bnRLZXk9ZkJLOVlqYW44Vm8xdnJGZ2xhTTFaQS83YVl3eHpOcVk5N3lxaEhPUlpQQTBHdHBoUWUzSTlWdGJLZVhkUjJvc1E0SHh2KzJxLytybHpFWDczR3U1TXc9PTtFbmRwb2ludFN1ZmZpeD1jb3JlLndpbmRvd3MubmV0
+apiVersion: v1
+kind: Secret
+metadata:
+  name: func-python-canny
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: func-python-canny
+  namespace: default
+  labels:
+    app: func-python-canny
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: func-python-canny
+  template:
+    metadata:
+      labels:
+        app: func-python-canny
+    spec:
+      containers:
+      - name: func-python-canny
+        image: nibirsharif/func-python-canny
+        env:
+        - name: AzureFunctionsJobHost__functions__0
+          value: BlobTriggerCanny
+        envFrom:
+        - secretRef:
+            name: func-python-canny
+---
+apiVersion: keda.k8s.io/v1alpha1
+kind: ScaledObject
+metadata:
+  name: func-python-canny
+  namespace: default
+  labels:
+    deploymentName: func-python-canny
+spec:
+  scaleTargetRef:
+    deploymentName: func-python-canny
+  triggers:
+  - type: azure-blob
+    metadata:
+      name: myblob
+      type: blobTrigger
+      direction: in
+      path: grayscale/{name}
+      connection: snibirkedastor_STORAGE
+---
+
